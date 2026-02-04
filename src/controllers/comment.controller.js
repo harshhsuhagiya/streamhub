@@ -72,14 +72,88 @@ const getVideoComments = asyncHandler(async (req, res) => {
 
 const addComment = asyncHandler(async (req, res) => {
     // TODO: add a comment to a video
+    const { content } = req.body;
+const { videoId } = req.params;
+
+// 1️ Validate videoId
+if (!mongoose.Types.ObjectId.isValid(videoId)) {
+    throw new ApiError(400, "Invalid video ID");
+}
+
+// 2️ Check content exists
+if (!content || content.trim() === "") {
+    throw new ApiError(400, "Comment content is required");
+}
+
+// 3️ Check if video exists
+const video = await Video.findById(videoId);
+if (!video) {
+    throw new ApiError(404, "Video not found");
+}
+
+// 4️ Create comment
+const comment = await Comment.create({
+    content,
+    video: videoId,
+    owner: req.user._id
+});
+
+// 5️ Send response
+return res
+    .status(201)
+    .json(new ApiResponse(201, comment, "Comment added successfully"));
+
 })
 
 const updateComment = asyncHandler(async (req, res) => {
     // TODO: update a comment
+    const { content } = req.body;
+    const { commentId } = req.params;
+    
+    // 1️ Validate commentId
+    if (!mongoose.Types.ObjectId.isValid(commentId)) {
+        throw new ApiError(400, "Invalid comment ID");
+    }
+
+    // 2️ Find and update comment
+    const updatedComment = await Comment.findByIdAndUpdate(
+        commentId,
+        { content },
+        { new: true }
+    );
+
+    // 3️ Check if comment exists
+    if (!updatedComment) {
+        throw new ApiError(404, "Comment not found");
+    }
+
+    // 4️ Send response
+    return res.status(200).json(
+        new ApiResponse(200, updatedComment, "Comment updated successfully")
+    );
 })
 
 const deleteComment = asyncHandler(async (req, res) => {
     // TODO: delete a comment
+    const { commentId } = req.params;
+
+    // 1 ️ Validate commentId
+    if(!mongoose.Types.ObjectId.isValid(commentId)) {
+       throw new ApiError(400, "Invalid comment ID");
+    }
+
+    // 2️ Find and delete comment
+    const deletedComment = await Comment.findByIdAndDelete(commentId);
+
+    // 3️ Check if comment exists
+    if(!deletedComment) {
+       throw new ApiError(404, "Comment not found");
+    }
+
+    // 4️ Send response
+    return res.status(200).json(
+       new ApiResponse(200, deletedComment, "Comment deleted successfully")
+    );
 })
 
 export {
